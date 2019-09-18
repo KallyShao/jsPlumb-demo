@@ -9,9 +9,9 @@ visoConfig.connectorPaintStyle = {
   lineWidth: 2,
   strokeStyle: '#61B7CF',
   joinstyle: 'round',
-  fill: 'pink',
-  outlineColor: '',
-  outlineWidth: ''
+  // fill: 'pink',
+  outlineColor: '#61B7CF',
+  outlineWidth: 2
 }
 
 // 鼠标悬浮在连接线上的样式
@@ -23,6 +23,7 @@ visoConfig.connectorHoverStyle = {
 }
 
 visoConfig.baseStyle = {
+  DragOptions: { cursor: 'pointer', zIndex: 2000 },
   endpoint: ['Dot', {
     radius: 8,
     fill: 'pink'
@@ -32,7 +33,7 @@ visoConfig.baseStyle = {
   paintStyle: {
     strokeStyle: '#1e8151',
     stroke: '#7AB02C',
-    fill: 'pink',
+    // fill: 'pink',
     fillStyle: '#1e8151',
     radius: 6,
     lineWidth: 2
