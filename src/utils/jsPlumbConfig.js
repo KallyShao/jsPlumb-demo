@@ -1,5 +1,6 @@
 var visoConfig = {
-  visoTemplate: {}
+  visoTemplate: {},
+  // ReattachConnections: true
 }
 
 visoConfig.visoTemplate.playAudioNode = '<div class="pa" id="{{id}}" style="top:{{top}}px;left:{{left}}px"><a class="btn btn-success" href="#" role="button">放音</a></div>'
@@ -7,17 +8,16 @@ visoConfig.visoTemplate.playAudioNode = '<div class="pa" id="{{id}}" style="top:
 // 基本连接线样式
 visoConfig.connectorPaintStyle = {
   lineWidth: 2,
-  strokeStyle: '#61B7CF',
+  stroke: '#61B7CF',
   joinstyle: 'round',
-  // fill: 'pink',
-  outlineColor: '#61B7CF',
-  outlineWidth: 2
+  // outlineColor: '#61B7CF',
+  // outlineWidth: 2
 }
 
 // 鼠标悬浮在连接线上的样式
 visoConfig.connectorHoverStyle = {
   lineWidth: 2,
-  strokeStyle: 'red',
+  stroke: 'red',
   outlineWidth: 10,
   outlineColor: ''
 }
@@ -25,7 +25,7 @@ visoConfig.connectorHoverStyle = {
 visoConfig.baseStyle = {
   DragOptions: { cursor: 'pointer', zIndex: 2000 },
   endpoint: ['Dot', {
-    radius: 8,
+    radius: 6,
     fill: 'pink'
   }], // 端点的形状
   connectorStyle: visoConfig.connectorPaintStyle, // 连接线的颜色，大小样式

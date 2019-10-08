@@ -1,34 +1,26 @@
 <template>
 <el-container>
 	<el-aside width="200px">
-		 <div>
+		<div>
 				<h5>节点类型列表</h5>
 				<el-row>
 					<el-col>
-						<drag class="drag" :tag="'div'" :transfer-data="{ type: 'vnf' }">
+						<drag v-for="item in categoryList"
+							class="drag" :tag="'div'"
+							:transfer-data="item"
+							:key="item.name"
+							@drag="_handleDrag(item.name, ...arguments)"
+						>
 							<el-button type="primary" class="btn-controller">
-								<!-- <i class="fa fa-play-circle-o" aria-hidden="true"></i> -->
+								{{ item.label }}
+							</el-button>
+						</drag>
+						<!-- <drag class="drag" :tag="'div'" :transfer-data="{ type: 'vnf' }">
+							<el-button type="primary" class="btn-controller">
+								<i class="fa fa-play-circle-o" aria-hidden="true"></i>
 								VNF
 							</el-button>
-						</drag>
-						<drag class="drag" :tag="'div'" :transfer-data="{ type: 'vl' }">
-							<el-button type="primary" class="btn-controller">
-								<!-- <i class="fa fa-navicon" aria-hidden="true"></i> -->
-								VL
-							</el-button>
-						</drag>
-						<drag class="drag" :tag="'div'" :transfer-data="{ type: 'router' }">
-							<el-button type="primary" class="btn-controller">
-								<!-- <i class="fa fa-navicon" aria-hidden="true"></i> -->
-								路由
-							</el-button>
-						</drag>
-						<drag class="drag" :tag="'div'" :transfer-data="{ type: 'sub-router' }">
-							<el-button type="primary" class="btn-controller">
-								<!-- <i class="fa fa-navicon" aria-hidden="true"></i> -->
-								子路由
-							</el-button>
-						</drag>
+						</drag> -->
 					</el-col>
 				</el-row>
 			</div>
@@ -39,26 +31,41 @@
 			:tag="'div'"
 			@dragover="over = true"
 			@dragleave="over = false"
-			@drop="handleDrop">
+			@drop="_handleDrop">
 			<div class="drop-region" id="flowchart-demo">
-				<el-button type="default" class="vnf" id="vnf1">vnf1</el-button>
-				<el-button type="default" class="vnf"  id="vnf2">vnf2</el-button>
-				<el-button type="default" class="vnf"  id="vnf3">vnf3</el-button>
-				<!-- <div class="vnf" id="vnf1"><i class="el-icon-edit"></i></div>
-				<div class="vnf" id="vnf2"><i class="el-icon-platform-eleme"></i></div>
-				<div class="vnf" id="vnf3"><i class="el-icon-user-solid"></i></div> -->
+				<el-button v-for="item in itemList"
+					type="default"
+					class="draggable"
+					:key="item.id"
+					:id="item.id"
+					:style="item.pos"
+				>
+				{{ item.text }}
+				<i class="close el-icon-close" aria-hidden="true" @click="_deleteNode(item.id)"></i>
+				</el-button>
 			</div>
 		</drop>
 	</el-main>
-	<el-dialog :title="dialogTitle" :visible="vnfDialogVisible" @close="_handleVnfDialogClose">
+	<el-dialog title="vnf" :visible="vnfDialogVisible" @close="_handleVnfDialogClose">
 		<el-form ref="form" :model="formVNF" label-width="80px">
 			<el-form-item label="VNF名称">
 				<el-input v-model="formVNF.name"></el-input>
 			</el-form-item>
 		</el-form>
 		<div slot="footer" class="dialog-footer">
-				<el-button type="primary" @click="onSubmit">立即创建</el-button>
+				<el-button type="primary" @click="onSubmit('vnf')">立即创建</el-button>
 				<el-button @click="vnfDialogVisible=false">取消</el-button>
+		</div>
+	</el-dialog>
+	<el-dialog title="vl" :visible="vlDialogVisible" @close="_handleVnfDialogClose">
+		<el-form ref="form" :model="formVL" label-width="80px">
+			<el-form-item label="VL名称">
+				<el-input v-model="formVL.name"></el-input>
+			</el-form-item>
+		</el-form>
+		<div slot="footer" class="dialog-footer">
+				<el-button type="primary" @click="onSubmit('vl')">立即创建</el-button>
+				<el-button @click="vlDialogVisible=false">取消</el-button>
 		</div>
 	</el-dialog>
 </el-container>
@@ -67,82 +74,142 @@
 <script>
 import jsPlumb from 'jsplumb';
 import jsPlumbConfig from '@/utils/jsPlumbConfig.js';
-
+const uuidv1 = require('uuid/v1');
 const jsplumb = jsPlumb.jsPlumb;
 
 	export default {
 		data () {
-			return { 
+			return {
         over: false,
 				showForm: false,
 				vnfDialogVisible: false,
+				vlDialogVisible: false,
 				formVNF: {
 					name: ''
 				},
-				dialogTitle: 'vnf信息',
-				vnfInfoList: [
-					{	
-						id: 'vnf_1_out',
-						text: 'vnf1',
-						tag: 'el-button'
+				formVL: {
+					name: ''
+				},
+				categoryList: [
+					{
+						label: 'VNF',
+						name: 'vnf',
+						isTarget: false,
+						isSource: true
 					},
-					{	
-						id: 'vnf_2_out',
-						text: 'vnf2',
-						tag: 'el-button'
+					{
+						label: 'VL',
+						name: 'vl',
+						isTarget: true,
+						isSource: true
+					},
+					{
+						label: '路由',
+						name: 'router',
+						isTarget: true,
+						isSource: false
+					},
+					{
+						label: '子路由',
+						name: 'sub-router',
+						isTarget: true,
+						isSource: false
 					}
-				]
+				],
+				itemList: [],
+				obj: {}
       };
 		},
 		methods: {
 			main() {
-				const config = this.getBaseConfig();
-				console.log(config);
-				const jInstance = jsplumb.getInstance({
+				const me = this;
+				this.jInstance = jsplumb.getInstance({
 					Container:"flowchart-demo"
 				});
-				// const jInstance = jsplumb.getInstance({
-				// 			// ConnectionOverlays: [
-				// 			// 		[ "Arrow", { width: 8, length: 10, location: 1 } ]
-				// 			// ],
-				// 						connectorOverlays: [
-				// 					[ "Arrow", { width: 8, length: 10, location: 1 } ]
-				// 			],
-				// 			Container:"flowchart-demo",
-				// });
+				const instance = this.jInstance;
+				this.jInstance.importDefaults({
+					// ReattachConnections: true,
+					ConnectionsDetachable   : false,
+				});
+				this.jInstance.bind("connection", function(info) {
+					// console.log(info);
+				});
+				this.jInstance.bind('dblclick', function (conn, originalEvent) {
+					// console.log(conn);
+					me.$confirm('确定删除所点击的链接吗？').then(() => {
+						instance.deleteConnection(conn);
+					})
+					.catch(() => {
 
-        jInstance.draggable($('.vnf'));
-				jInstance.addEndpoint('vnf1',{uuid:1 , anchor: "TopCenter",  isSource:true}, config);
-				jInstance.addEndpoint('vnf2',{uuid:2 ,anchor:'Right', isTarget:true, maxConnections: -1 }, config);
-        jInstance.addEndpoint('vnf3',{anthors:'Right', isTarget:true, isSource: true }, config);
-				
-				jInstance.connect({
-					uuids:[1,2],  //根据uuid进行连接
-					// paintStyle: { stroke: 'red', strokeWidth: 2 },  //线的样式
-					endpointStyle: { fill: 'blue', outlineStroke: 'darkgray', outlineWidth: 2 },//点的样式
-					// overlays: [ ['Arrow', { width: 12, length: 12, location: 0.5 }] ]   //覆盖物 箭头 及 样式
+					})
 				});
 			},
 			getBaseConfig() {
 				return Object.assign({}, jsPlumbConfig.baseStyle);
 			},
-			handleDrop(data, ev) {
-				console.log(ev);
+			_handleDrop(data, ev) {
+				let name = data.name;
+				let visible = name + 'DialogVisible';
         this.over = false;
-				// this.showForm = true;
-				this.vnfDialogVisible = true;
-			},
-			onSubmit() {
+				this[visible] = true;
 
+				this.obj = {
+					id: uuidv1(),
+					text: data.label,
+					isTarget: data.isTarget,
+					isSource: data.isSource,
+					pos: {
+						top: ev.pageY + 'px',
+						left: ev.pageX - 200 + 'px'
+					}
+				};
+			},
+			_handleDrag(name, transferData, ev) {
+				// console.log(transferData);
+			},
+			onSubmit(name) {
+				// console.log(name);
 			},
 			_handleVnfDialogClose() {
+				this.itemList.push(this.obj);
+				const config = this.getBaseConfig();
 
+				this.$nextTick(() => {
+					this.jInstance.draggable(this.obj.id, {
+						containment: 'parent'
+					});
+					this.itemList.map(item => {
+						if (item.isTarget) {
+							this.jInstance.addEndpoint(item.id, {
+								anchor: 'TopCenter',
+								isTarget: true,
+								isSource: false,
+								uuid: item.id
+							}, config);
+						}
+						if (item.isSource) {
+							this.jInstance.addEndpoint(item.id, {
+								anchor: 'Bottom',
+								isSource: true,
+								isTarget: false,
+								uuid: item.id,
+								endpointStyle: { fill: 'blue', outlineStroke: 'darkgray', outlineWidth: 2 }
+							}, config);
+						}
+					});
+				});
+			},
+			_deleteNode(id) {
+				// 删除整个dom节点
+				this.jInstance.remove(id);            
 			}
 		},
 		mounted() {
 			const me = this;
 			jsplumb.ready(function() {
 				me.main();
+
+
 			});
 		}
 	};
@@ -158,30 +225,28 @@ const jsplumb = jsPlumb.jsPlumb;
     text-align: center;
     line-height: 50px;
 	}
-	  .el-main {
+	.el-main {
     background-color: #E9EEF3;
     color: #333;
   }
-  
+  .el-button {
+		transition: 0s;
+		-webkit-transition: 0s;
+		position: relative;
+	}
+	.el-button .close {
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		/* font-size: 16px; */
+	}
   .drop-region {
     width: 100%;
 		height: 100%;
 		position: relative;
 	}
-	.vnf {
+	.draggable {
 		position: absolute;
-	}
-	#vnf1 {
-		top: 4em;
-    left: 5em;
-	}
-	#vnf2 {
-    top: 7em;
-    left: 16em;
-	}
-	#vnf3 {
-   top: 7em;
-    left: 8em;
 	}
 	.form-wrap {
 		width: 400px;
