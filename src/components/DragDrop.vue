@@ -46,10 +46,13 @@
 			</div>
 		</drop>
 	</el-main>
-	<el-dialog title="vnf" :visible="vnfDialogVisible" @close="_handleVnfDialogClose">
+	<el-dialog title="vnf" :visible="vnfDialogVisible" @close="_handleDialogClose('vnf')">
 		<el-form ref="form" :model="formVNF" label-width="80px">
 			<el-form-item label="VNF名称">
 				<el-input v-model="formVNF.name"></el-input>
+			</el-form-item>
+			<el-form-item label="VNF id">
+				<el-input v-model="formVNF.id"></el-input>
 			</el-form-item>
 		</el-form>
 		<div slot="footer" class="dialog-footer">
@@ -57,15 +60,26 @@
 				<el-button @click="vnfDialogVisible=false">取消</el-button>
 		</div>
 	</el-dialog>
-	<el-dialog title="vl" :visible="vlDialogVisible" @close="_handleVnfDialogClose">
+	<el-dialog title="vl" :visible="cpDialogVisible" @close="_handleDialogClose('cp')">
 		<el-form ref="form" :model="formVL" label-width="80px">
-			<el-form-item label="VL名称">
+			<el-form-item label="cp名称">
 				<el-input v-model="formVL.name"></el-input>
 			</el-form-item>
 		</el-form>
 		<div slot="footer" class="dialog-footer">
+				<el-button type="primary" @click="onSubmit('cp')">立即创建</el-button>
+				<el-button @click="cpDialogVisible=false">取消</el-button>
+		</div>
+	</el-dialog>
+	<el-dialog title="router" :visible="routerDialogVisible" @close="_handleDialogClose('router')">
+		<el-form ref="form" :model="formRouter" label-width="80px">
+			<el-form-item label="router名称">
+				<el-input v-model="formRouter.name"></el-input>
+			</el-form-item>
+		</el-form>
+		<div slot="footer" class="dialog-footer">
 				<el-button type="primary" @click="onSubmit('vl')">立即创建</el-button>
-				<el-button @click="vlDialogVisible=false">取消</el-button>
+				<el-button @click="routerDialogVisible=false">取消</el-button>
 		</div>
 	</el-dialog>
 </el-container>
@@ -74,6 +88,7 @@
 <script>
 import jsPlumb from 'jsplumb';
 import jsPlumbConfig from '@/utils/jsPlumbConfig.js';
+import nodeInfo from '@/utils/jsPlumbData.js';
 const uuidv1 = require('uuid/v1');
 const jsplumb = jsPlumb.jsPlumb;
 
@@ -83,11 +98,15 @@ const jsplumb = jsPlumb.jsPlumb;
         over: false,
 				showForm: false,
 				vnfDialogVisible: false,
-				vlDialogVisible: false,
+				cpDialogVisible: false,
+				routerDialogVisible: false,
 				formVNF: {
 					name: ''
 				},
 				formVL: {
+					name: ''
+				},
+				formRouter: {
 					name: ''
 				},
 				categoryList: [
@@ -98,14 +117,14 @@ const jsplumb = jsPlumb.jsPlumb;
 						isSource: true
 					},
 					{
-						label: 'VL',
-						name: 'vl',
+						label: 'CP',
+						name: 'cp',
 						isTarget: true,
 						isSource: true
 					},
 					{
-						label: '路由',
-						name: 'router',
+						label: 'Network',
+						name: 'network',
 						isTarget: true,
 						isSource: false
 					},
@@ -168,12 +187,8 @@ const jsplumb = jsPlumb.jsPlumb;
 				// console.log(transferData);
 			},
 			onSubmit(name) {
-				// console.log(name);
-			},
-			_handleVnfDialogClose() {
 				this.itemList.push(this.obj);
 				const config = this.getBaseConfig();
-
 				this.$nextTick(() => {
 					this.jInstance.draggable(this.obj.id, {
 						containment: 'parent'
@@ -181,7 +196,7 @@ const jsplumb = jsPlumb.jsPlumb;
 					this.itemList.map(item => {
 						if (item.isTarget) {
 							this.jInstance.addEndpoint(item.id, {
-								anchor: 'TopCenter',
+								// anchor: 'TopCenter',
 								isTarget: true,
 								isSource: false,
 								uuid: item.id
@@ -189,7 +204,7 @@ const jsplumb = jsPlumb.jsPlumb;
 						}
 						if (item.isSource) {
 							this.jInstance.addEndpoint(item.id, {
-								anchor: 'Bottom',
+								// anchor: 'Bottom',
 								isSource: true,
 								isTarget: false,
 								uuid: item.id,
@@ -198,6 +213,10 @@ const jsplumb = jsPlumb.jsPlumb;
 						}
 					});
 				});
+				this[name + 'DialogVisible'] = false;
+			},
+			_handleDialogClose(name) {
+				this[name + 'DialogVisible'] = false;
 			},
 			_deleteNode(id) {
 				// 删除整个dom节点
@@ -208,8 +227,6 @@ const jsplumb = jsPlumb.jsPlumb;
 			const me = this;
 			jsplumb.ready(function() {
 				me.main();
-
-
 			});
 		}
 	};

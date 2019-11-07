@@ -99,7 +99,7 @@ export default {
       });
       // jInstance.setContainer('diagramContainer');
 
-          jInstance.draggable($('.window'));
+          jInstance.draggable($('.window' ));
           jInstance.addEndpoint('flowchartWindow1',{uuid:1 , anchor: "TopCenter",  isSource:true});
           jInstance.addEndpoint('flowchartWindow2',{uuid:2 ,anchor:'Right', isTarget:true});
           jInstance.addEndpoint('flowchartWindow3',{anthors:'Right', isTarget:true});
