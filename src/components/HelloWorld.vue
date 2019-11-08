@@ -111,11 +111,6 @@ export default {
             overlays: [ ['Arrow', { width: 12, length: 12, location: 0.5 }] ]   //覆盖物 箭头 及 样式
           })
 
-
-
-
-
-
         // $('.btn-controller').draggable({
         //   helper: 'clone',
         //   scope: 'ss'
