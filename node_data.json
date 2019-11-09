@@ -7,64 +7,70 @@
 		"description" : "this is a test NSD"
 	},
 	"topology_templates" : {
-		"inputs" : [ {
-			"name" : "network1_segment_id",
-			"type" : "integer",
-			"default" : 100,
-			"required" : true
-		}, {
-			"name" : "extnet_segment_id",
-			"type" : "integer",
-			"default" : 1001,
-			"required" : true
-		}, {
-			"name" : "vnf1_subnet1_ipversion",
-			"type" : "integer",
-			"default" : 4,
-			"required" : true
-		}, {
-			"name" : "vnf1_subnet1_alp",
-			"type" : "array",
-			"entry_schema" : "AllocationPool",
-			"default" : [ {
-				"start" : "192.168.0.1",
-				"end" : "192.168.0.254"
-			} ]
-		}, {
-			"name" : "vnf1_cp1_loopbackip",
-			"type" : "array",
-			"entry_schema" : "ECMPLoopbackIp",
-			"default" : [ {
-				"v4_ip" : "192.168.0.1",
-				"v6_ip" : "FFFF::"
-			} ]
-		}, {
-			"name" : "vnf1_cp1_source_ips",
-			"type" : "array",
-			"entry_schema" : "string",
-			"default" : [ "192.168.0.1", "192.168.0.2" ]
-		} ],
+		"inputs" : [
+			{
+				"name" : "network1_segment_id",
+				"type" : "integer",
+				"default" : 100,
+				"required" : true
+			}, {
+				"name" : "extnet_segment_id",
+				"type" : "integer",
+				"default" : 1001,
+				"required" : true
+			}, {
+				"name" : "vnf1_subnet1_ipversion",
+				"type" : "integer",
+				"default" : 4,
+				"required" : true,
+				"valid_values": [4,6]
+			}, {
+				"name" : "vnf1_subnet1_alp",
+				"type" : "array",
+				"entry_schema" : "AllocationPool",
+				"default" : [ {
+					"start" : "192.168.0.1",
+					"end" : "192.168.0.254"
+				} ]
+			}, {
+				"name" : "vnf1_cp1_loopbackip",
+				"type" : "array",
+				"entry_schema" : "ECMPLoopbackIp",
+				"default" : [ {
+					"v4_ip" : "192.168.0.1",
+					"v6_ip" : "FFFF::"
+				} ]
+			}, {
+				"name" : "vnf1_cp1_source_ips",
+				"type" : "array",
+				"entry_schema" : "string",
+				"default" : [ "192.168.0.1", "192.168.0.2" ]
+			}
+		],
 		"node_template" : {
-			"VNF" : [ {
-				"item_id" : "vnf1",
-				"properties" : {
-					"vnf_package_name" : "test-package"
-				},
-				"connections" : {
-					"cps" : [ "cp1" ],
-					"networks" : [],
-					"tapservices" : []
+			"VNF" : [
+				{
+					"item_id" : "vnf1",
+					"properties" : {
+						"vnf_package_name" : "test-package"
+					},
+					"connections" : {
+						"CP" : [ "cp1" ],
+						"Network" : [],
+						"TapService" : []
+					}
 				}
-			} ],
-			"CP" : [ {
+			],
+			"CP" : [{
 				"item_id" : "cp1",
 				"properties" : {
 					"cpd_name" : "test-cp1"
 				},
 				"connections" : {
-					"network" : "network1",
-					"networks" : [],
-					"tapservices" : []
+					"Network" : [ "network1" ],
+					"ECMP" : [],
+					"TapFlow" : [],
+					"BGP" : []
 				}
 			} ],
 			"Network" : [ {
@@ -77,9 +83,8 @@
 					"need_create" : true
 				},
 				"connections" : {
-					"cps" : [],
-					"networks" : [],
-					"tapservices" : []
+					"Subnet" : [],
+					"VNF" : []
 				}
 			}, {
 				"item_id" : "external_network1",
@@ -91,9 +96,8 @@
 					"need_create" : true
 				},
 				"connections" : {
-					"vnfs" : [ "vnf1" ],
-					"subnets" : [ "external_subnet1" ],
-					"tapservices" : []
+					"Subnet" : [],
+					"VNF" : []
 				}
 			} ],
 			"Subnet" : [ {
@@ -108,9 +112,9 @@
 					}
 				},
 				"connections" : {
-					"network" : "external_network1",
-					"router" : [],
-					"bgp" : []
+					"Network" : [ "external_network1" ],
+					"Router" : [],
+					"BGP" : []
 				}
 			}, {
 				"item_id" : "external_subnet1",
@@ -124,9 +128,9 @@
 					}
 				},
 				"connections" : {
-					"network" : "network1",
-					"router" : [],
-					"bgp" : []
+					"Network" : [ "network1" ],
+					"Router" : [],
+					"BGP" : []
 				}
 			} ],
 			"Router" : [ {
@@ -150,7 +154,12 @@
 					"need_create" : true
 				},
 				"connections" : {
-					"subnets" : [ "subnet1" ]
+					"Subnet" : [ "subnet1" ],
+					"VNF" : [],
+					"StaticRoute" : [],
+					"ECMP" : [],
+					"BGP" : [],
+					"VPC" : []
 				}
 			} ],
 			"StaticRoute" : [ {
@@ -164,7 +173,7 @@
 					}
 				},
 				"connections" : {
-					"router" : "vmme_router1"
+					"Router" : [ "vmme_router1" ]
 				}
 			} ],
 			"BGP" : [ {
@@ -177,8 +186,8 @@
 					}
 				},
 				"connections" : {
-					"router" : "vmme_router1",
-					"exsubnet" : "exsubnet1"
+					"Router" : [ "vmme_router1" ],
+					"Subnet" : [ "exsubnet1" ]
 				}
 			} ],
 			"VPC" : [ {
@@ -192,8 +201,8 @@
 					"local_firewall_enable" : true
 				},
 				"connections" : {
-					"local_router" : "vmme_router1",
-					"peer_router" : "vmme_router2"
+					"LocalRouter" : [ "vmme_router1" ],
+					"PeerRouter" : [ "vmme_router2" ]
 				}
 			} ],
 			"ECMP" : [ {
@@ -209,8 +218,8 @@
 					"isPublic" : true
 				},
 				"connections" : {
-					"router" : "vnf_router1",
-					"cp" : "vnf1_cp1"
+					"Router" : [ "vnf_router1" ],
+					"CP" : [ "vnf1_cp1" ]
 				}
 			} ],
 			"TapService" : [ {
@@ -223,8 +232,8 @@
 					}
 				},
 				"connections" : {
-					"vnf" : "vnf1",
-					"tapflows" : [ "vnf1_tapflow1" ]
+					"VNF" : [ "vnf1" ],
+					"TapFlow" : [ "vnf1_tapflow1" ]
 				}
 			} ],
 			"TapFlow" : [ {
@@ -238,8 +247,8 @@
 					}
 				},
 				"connections" : {
-					"tapservice" : "vnf1_tapservice1",
-					"cp" : []
+					"TapService" : [ "vnf1_tapservice1" ],
+					"CP" : []
 				}
 			} ]
 		},
