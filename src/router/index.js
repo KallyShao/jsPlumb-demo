@@ -11,5 +11,11 @@ const routes =  [{
   path: '/drag',
   component: () =>
       import ('@/components/DragDrop'),
-}];
+},
+{
+  path: '/drag-test',
+  component: () =>
+      import ('@/components/drag'),
+}
+];
 export default new Router({ routes });

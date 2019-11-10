@@ -9,9 +9,7 @@ visoConfig.visoTemplate.playAudioNode = '<div class="pa" id="{{id}}" style="top:
 visoConfig.connectorPaintStyle = {
   lineWidth: 2,
   stroke: '#61B7CF',
-  joinstyle: 'round',
-  // outlineColor: '#61B7CF',
-  // outlineWidth: 2
+  joinstyle: 'round'
 }
 
 // 鼠标悬浮在连接线上的样式
@@ -20,7 +18,7 @@ visoConfig.connectorHoverStyle = {
   stroke: 'red',
   outlineWidth: 10,
   outlineColor: ''
-}
+};
 
 visoConfig.baseStyle = {
   DragOptions: { cursor: 'pointer', zIndex: 2000 },
@@ -38,6 +36,7 @@ visoConfig.baseStyle = {
     radius: 6,
     lineWidth: 2
   }, // 端点的颜色样式
+  endpointStyle: { fill: 'blue', outlineStroke: 'darkgray', outlineWidth: 2 },
   // hoverPaintStyle: {
   //   outlineStroke: 'pink'
   // },

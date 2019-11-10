@@ -9,10 +9,9 @@
 							class="drag" :tag="'div'"
 							:transfer-data="item"
 							:key="item.type"
-							:draggable="item.draggable"
 							@drag="_handleDrag(item.type, ...arguments)"
 						>
-							<el-button type="primary" class="btn-controller" :disabled="!item.draggable">
+							<el-button type="primary" class="btn-controller">
 								{{ item.type }}
 							</el-button>
 						</drag>
@@ -34,17 +33,21 @@
 			@dragleave="over = false"
 			@drop="_handleDrop">
 			<div class="drop-region" id="flowchart-demo">
-				<!-- <el-button v-for="item in nodeList"
-					type="default"
-					class="draggable"
-					:key="item.id"
-					:id="item.id"
-					:style="item.pos"
-				>
-				{{ item.text }}
-				<i class="close el-icon-close" aria-hidden="true" @click="_deleteNode(item.id)"></i>
-				</el-button> -->
-				<el-card class="box-card draggable" v-for="(node, idx) in nodeList" :style="node.position"
+				<template v-for="node in nodeList">
+					<el-button v-for="item in node.itemList"
+						type="default"
+						class="draggable"
+						:key="item.item_id"
+						:id="item.id"
+						:style="item.position"
+						:node_type="node.node_type"
+					>
+						{{ node.node_type }}_{{ item.index }}
+						<i class="edit el-icon-edit"></i>
+						<i class="close el-icon-close" aria-hidden="true" @click="_deleteNode(item.item_id)"></i>
+					</el-button>
+				</template>
+				<!-- <el-card class="box-card draggable" v-for="(node, idx) in nodeList" :style="node.position"
 					:id="node.id"
 					:key="idx">
 					<div slot="header" class="clearfix">
@@ -61,7 +64,7 @@
 							<i class="el-icon-circle-plus"></i>
 						</div>
 					</div>
-				</el-card>
+				</el-card> -->
 			</div>
 		</drop>
 	</el-main>
@@ -70,8 +73,8 @@
 			<el-form-item label="VNF名称">
 				<el-input v-model="formVNF.name"></el-input>
 			</el-form-item>
-			<el-form-item label="VNF id">
-				<el-input v-model="formVNF.id"></el-input>
+			<el-form-item label="VNF item id">
+				<el-input v-model="formVNF.item_id"></el-input>
 			</el-form-item>
 		</el-form>
 		<div slot="footer" class="dialog-footer">
@@ -80,25 +83,14 @@
 		</div>
 	</el-dialog>
 	<el-dialog title="vl" :visible="NetworkDialogVisible" @close="_handleDialogClose('Network')">
-		<el-form ref="form" :model="formVL" label-width="80px">
+		<el-form ref="form" :model="formNetwork" label-width="80px">
 			<el-form-item label="Network名称">
-				<el-input v-model="formVL.name"></el-input>
+				<el-input v-model="formNetwork.name"></el-input>
 			</el-form-item>
 		</el-form>
 		<div slot="footer" class="dialog-footer">
 				<el-button type="primary" @click="onSubmit('Network')">立即创建</el-button>
 				<el-button @click="NetworkDialogVisible=false">取消</el-button>
-		</div>
-	</el-dialog>
-	<el-dialog title="router" :visible="routerDialogVisible" @close="_handleDialogClose('router')">
-		<el-form ref="form" :model="formRouter" label-width="80px">
-			<el-form-item label="router名称">
-				<el-input v-model="formRouter.name"></el-input>
-			</el-form-item>
-		</el-form>
-		<div slot="footer" class="dialog-footer">
-				<el-button type="primary" @click="onSubmit('vl')">立即创建</el-button>
-				<el-button @click="routerDialogVisible=false">取消</el-button>
 		</div>
 	</el-dialog>
 </el-container>
@@ -107,7 +99,7 @@
 <script>
 import jsPlumb from 'jsplumb';
 import jsPlumbConfig from '@/utils/jsPlumbConfig.js';
-import nodeTemplate from '@/utils/jsPlumbData.js';
+import { nodeTemplate } from '@/utils/jsPlumbData.js';
 const uuidv1 = require('uuid/v1');
 const jsplumb = jsPlumb.jsPlumb;
 
@@ -120,84 +112,17 @@ const jsplumb = jsPlumb.jsPlumb;
 				NetworkDialogVisible: false,
 				routerDialogVisible: false,
 				formVNF: {
-					name: ''
+					name: '',
+					item_id: ''
 				},
-				formVL: {
-					name: ''
+				formNetwork: {
+					name: '',
+					item_id:  ''
 				},
-				formRouter: {
-					name: ''
-				},
-				categoryList: [
-					{
-						type: 'VNF',
-						connections: {
-							"CP": {
-							"multiple": true,
-							"required": false
-							},
-							"Network": {
-								"multiple": true,
-								"required": false
-							},
-							"TapService": {
-								"required": false,
-								"description": "requiredwhenneed_tapaasistrue"
-							}
-						},
-						draggable: true
-					},
-					{
-						type: 'Network',
-						"connections": {
-							"Network": {
-								"required": true
-							},
-							"ECMP": {
-								"required": false,
-								"description": "requiredwhenexist_loopbackipistrue"
-							},
-							"BGP": {
-								"required": false,
-								"description": "requiredwhenexist_bgpistrue"
-							},
-							"TapFlow": {
-								"required": false
-							}
-						},
-						draggable: true
-					},
-					{
-						label: 'Network',
-						name: 'network',
-						isTarget: true,
-						isSource: false
-					},
-					{
-						label: '子路由',
-						name: 'sub-router',
-						isTarget: true,
-						isSource: false
-					}
-				],
-				nodeList: [],
-				// nodeList: [
+				categoryList: [],
+				// categoryList: [
 				// 	{
 				// 		type: 'VNF',
-				// 		position: {
-				// 			top: '100px',
-				// 			left: '100px'
-				// 		},
-				// 		itemList: [
-				// 			{
-				// 				item_id: '1',
-				// 				index: 1
-				// 			},
-				// 			{
-				// 				item_id: '2',
-				// 				index: 2
-				// 			}
-				// 		],
 				// 		connections: {
 				// 			"CP": {
 				// 			"multiple": true,
@@ -214,18 +139,8 @@ const jsplumb = jsPlumb.jsPlumb;
 				// 		}
 				// 	},
 				// 	{
-				// 		type: 'CP',
-				// 		itemList: [
-				// 			{
-				// 				item_id: '1',
-				// 				index: 1
-				// 			},
-				// 			{
-				// 				item_id: '2',
-				// 				index: 2
-				// 			}
-				// 		],
-				// 		connections: {
+				// 		type: 'Network',
+				// 		"connections": {
 				// 			"Network": {
 				// 				"required": true
 				// 			},
@@ -243,7 +158,18 @@ const jsplumb = jsPlumb.jsPlumb;
 				// 		}
 				// 	}
 				// ],
-				obj: {}
+				nodeList: [
+					{
+						node_type: 'VNF',
+						itemList: []
+					},
+					{
+						node_type: 'Network',
+						itemList: []
+					}
+				],
+				obj: {},
+				nodePosition: {}
       };
 		},
 		methods: {
@@ -257,8 +183,17 @@ const jsplumb = jsPlumb.jsPlumb;
 					// ReattachConnections: true,
 					ConnectionsDetachable   : false,
 				});
+				// 2个节点建立连接的事件
 				this.jInstance.bind("connection", function(info) {
-					// console.log(info);
+					console.log(info);
+					const sourceAttr = info.source.attributes;
+					const targetAttr = info.target.attributes;
+					// console.log(sourceAttr);
+					// console.log(targetAttr);
+
+					// this.nodeList.map(node => {
+					// 	if (node.node_type === )
+					// })
 				});
 				this.jInstance.bind('dblclick', function (conn, originalEvent) {
 					// console.log(conn);
@@ -279,66 +214,26 @@ const jsplumb = jsPlumb.jsPlumb;
         this.over = false;
 				this[visible] = true;
 
-				// this.obj = {
-				// 	id: uuidv1(),
-				// 	text: data.label,
-				// 	isTarget: data.isTarget,
-				// 	isSource: data.isSource,
-				// 	pos: {
-				// 		top: ev.pageY + 'px',
-				// 		left: ev.pageX - 200 + 'px'
-				// 	}
-				// };
-				this.nodeList.map(node => {
-					if (node.type === data.type) {
-						node.itemList.map(item => {
-							
-						})
-					}
-				});
-				this.obj = {
-					type: data.type,
-					pos: {
-						top: ev.pageY + 'px',
-						left: ev.pageX - 200 + 'px'
-					},
-					itemList: [
-						{
-							id: uuidv1(),
-							item_id: '1',
-							index: 1
-						}
-					]
+				this.nodePosition = {
+					top: ev.pageY + 'px',
+					left: ev.pageX - 200 + 'px'
 				};
 			},
 			_handleDrag(name, transferData, ev) {
 				// console.log(transferData);
-				// alert('不能拖拽');
 			},
 			onSubmit(name) {
-				this.nodeList.push(this.obj);
-				const config = this.getBaseConfig();
-				this.$nextTick(() => {
-					this.jInstance.draggable(this.obj.id, {
-						containment: 'parent'
-					});
-					this.nodeList.map(node => {
-						// this.jInstance.addEndpoint(item.id, {
-						// 	// anchor: 'TopCenter',
-						// 	isTarget: true,
-						// 	isSource: false,
-						// 	uuid: item.id
-						// }, config);
-						node.itemList.map(item => {
-							this.jInstance.addEndpoint(item.id, {
-								// anchor: 'Bottom',
-								isSource: true,
-								isTarget: true,
-								uuid: item.id,
-								endpointStyle: { fill: 'blue', outlineStroke: 'darkgray', outlineWidth: 2 }
-							}, config);
-						})
-					});
+				this.nodeList.map(node => {
+					if (node.node_type === name) {
+						const count = node.itemList.length;
+						this.obj = {
+							index: count + 1,
+							item_id: this['form'+name].item_id,
+							id: uuidv1(),
+							position: this.nodePosition
+						};
+						node.itemList.push(this.obj);
+					}
 				});
 				this[name + 'DialogVisible'] = false;
 			},
@@ -350,11 +245,43 @@ const jsplumb = jsPlumb.jsPlumb;
 				this.jInstance.remove(id);            
 			}
 		},
+		created() {
+			const nodeTypes = nodeTemplate.nodetypes;
+			for (let key in nodeTypes) {
+				this.categoryList.push({
+					type: key
+				});
+			}
+		},
 		mounted() {
 			const me = this;
 			jsplumb.ready(function() {
 				me.main();
 			});
+		},
+		watch: {
+			nodeList: {
+				handler: function(newVal, oldVal) {
+					const config = this.getBaseConfig();
+					newVal.map(node => {
+						node.itemList.map(item => {
+							this.$nextTick(() => {
+								this.jInstance.draggable(item.id, {
+									containment: 'parent'
+								});
+								this.jInstance.addEndpoint(this.obj.id, {
+									// anchor: 'Bottom',
+									isSource: true,
+									isTarget: true,
+									uuid: this.obj.id,
+									// anchor:[ "Continuous" ]
+								}, config);
+							});
+						});
+					});
+				},
+				deep: true
+			}
 		}
 	};
 </script>
