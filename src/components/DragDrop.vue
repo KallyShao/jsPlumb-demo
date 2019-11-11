@@ -39,6 +39,7 @@
 						class="draggable"
 						:key="item.id"
 						:id="item.id"
+						:item_id="item.item_id"
 						:style="item.position"
 						:node_type="node.node_type"
 					>
@@ -86,6 +87,9 @@
 		<el-form ref="form" :model="formNetwork" label-width="80px">
 			<el-form-item label="Network名称">
 				<el-input v-model="formNetwork.name"></el-input>
+			</el-form-item>
+			<el-form-item label="Network id">
+				<el-input v-model="formNetwork.item_id"></el-input>
 			</el-form-item>
 		</el-form>
 		<div slot="footer" class="dialog-footer">
@@ -148,7 +152,7 @@ const jsplumb = jsPlumb.jsPlumb;
 				// ],
 				tempItemObj: {},
 				nodePosition: {},
-				// submitNodeTemplate:{}
+				submitNodeTemplate:{}
       };
 		},
 		methods: {
@@ -179,7 +183,7 @@ const jsplumb = jsPlumb.jsPlumb;
 							if (node.node_type === sourceNodeType) {
 								// node.connections
 								let connections = [];
-									console.log(node.connections);
+									// console.log(node.connections);
 								for (let k in node.connections) {
 									connections.push(k);
 								}
@@ -199,36 +203,52 @@ const jsplumb = jsPlumb.jsPlumb;
 					});
 				// 2个节点建立连接的事件
 				this.jInstance.bind("connection", function(info) {
-					console.log(info);
-					// const sourceNodeType = info.source.attributes.getNamedItem('node_type').value;
-					// const targetNodeType = info.target.attributes.getNamedItem('node_type').value;
+					// console.log(info);
+					const sourceNodeType = info.source.attributes.getNamedItem('node_type').value;
+					const targetNodeType = info.target.attributes.getNamedItem('node_type').value;
 
-					// const sourceItemId = info.source.attributes.getNamedItem('item_id').value;
-					// const targetItemId = info.target.attributes.getNamedItem('item_id').value;
+					const sourceItemId = info.source.attributes.getNamedItem('item_id').value;
+					const targetItemId = info.target.attributes.getNamedItem('item_id').value;
 
-					// const souceNodeItem = this.submitNodeTemplate[sourceNodeType] ? this.submitNodeTemplate[sourceNodeType] : [];
-					// const targetNodeItem = this.submitNodeTemplate[targetNodeType] ? this.submitNodeTemplate[targetNodeType] : [];
+					const sourceNodeItem = me.submitNodeTemplate[sourceNodeType] ? me.submitNodeTemplate[sourceNodeType] : [];
+					const targetNodeItem = me.submitNodeTemplate[targetNodeType] ? me.submitNodeTemplate[targetNodeType] : [];
 
-					// souceNodeItem.map(item => {
-					// 	item.connections = item.connections ? item.connections : {};
-					// });
+					const sourceItemIds = [];
+					sourceNodeItem.map(item => {
+						sourceItemIds.push(item.item_id);
+					});
+
+					if (sourceItemIds.find(sourceItemId)) {
+						sourceNodeItem.map(item => {
+							if (item.item_id === sourceItemId) {
+								item.connections[targetNodeType] = item.connections[targetNodeType] ? item.connections[targetNodeType] : [];
+								item.connections[targetNodeType].push(targetItemId);
+							}
+						});
+					} else {
+							sourceNodeItem.push({
+								item_id: sourceItemId,
+								connections: {
+									targetNodeType: [ targetItemId ]
+								}
+							});
+					}
+
+					console.log(sourceNodeItem);
+
 					// targetNodeItem.map(item => {
 					// 	item.connections = item.connections ? item.connections : {};
+					// 	item.connections[sourceNodeType] = item.connections[sourceNodeType] ? item.connections[sourceNodeType] : [];
+					// 	item.connections[sourceNodeType].push(sourceItemId);
 					// });
-					// const tempSourceObj = {
-					// 	item_id: sourceItemId
-					// };
-					// const sourceConnection = 
 
-					// this.nodeList.map(node => {
-					// 	if (node.node_type === )
-					// })
+
 				});
 
 				this.jInstance.bind('dblclick', function (conn, originalEvent) {
-					// console.log(conn);
+					console.log(conn);
 					me.$confirm('确定删除所点击的链接吗？').then(() => {
-						this.instance.deleteConnection(conn);
+						this.jInstance.deleteConnection(conn);
 					})
 					.catch(() => {
 
@@ -279,23 +299,6 @@ const jsplumb = jsPlumb.jsPlumb;
 						uuid: this.tempItemObj.id,
 					}, config);
 				});
-
-				// const config = this.getBaseConfig();
-				// this.$nextTick(() => {
-				// 	this.nodeList.map(node => {
-				// 		node.itemList.map(item => {
-				// 				this.jInstance.draggable(item.id, {
-				// 					containment: 'parent'
-				// 				});
-				// 				this.jInstance.addEndpoint(item.id, {
-				// 					// anchor: 'Bottom',
-				// 					isSource: true,
-				// 					isTarget: true,
-				// 					// uuid: item.id
-				// 				}, config);
-				// 		});
-				// 	});
-				// });
 			},
 			_handleDialogClose(name) {
 				this[name + 'DialogVisible'] = false;
@@ -325,26 +328,6 @@ const jsplumb = jsPlumb.jsPlumb;
 			jsplumb.ready(function() {
 				me.main();
 			});
-		},
-		watch: {
-			// tempItemObj: {
-			// 	handler: function(newVal, oldVal) {
-			// 		console.log(newVal);
-			// 		const config = this.getBaseConfig();
-			// 		this.$nextTick(() => {
-			// 			this.jInstance.draggable(newVal.id, {
-			// 				containment: 'parent'
-			// 			});
-			// 			this.jInstance.addEndpoint(newVal.id, {
-			// 				// anchor: 'Bottom',
-			// 				isSource: true,
-			// 				isTarget: true,
-			// 				uuid: newVal.id,
-			// 			}, config);
-			// 		});
-			// 	},
-			// 	deep: true
-			// }
 		}
 	};
 </script>
