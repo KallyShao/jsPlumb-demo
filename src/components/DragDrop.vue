@@ -41,7 +41,6 @@
 						:id="item.id"
 						:style="item.position"
 						:node_type="node.node_type"
-						:connections=""
 					>
 						{{ node.node_type }}_{{ item.index }}
 						<i class="edit el-icon-edit"></i>
@@ -94,6 +93,17 @@
 				<el-button @click="NetworkDialogVisible=false">取消</el-button>
 		</div>
 	</el-dialog>
+	<el-dialog title="subnet" :visible="SubnetDialogVisible" @close="_handleDialogClose('Subnet')">
+		<el-form ref="form" :model="formSubnet" label-width="80px">
+			<el-form-item label="Subnet名称">
+				<el-input v-model="formSubnet.name"></el-input>
+			</el-form-item>
+		</el-form>
+		<div slot="footer" class="dialog-footer">
+				<el-button type="primary" @click="onSubmit('Subnet')">立即创建</el-button>
+				<el-button @click="SubnetDialogVisible=false">取消</el-button>
+		</div>
+	</el-dialog>
 </el-container>
 </template>
 
@@ -111,7 +121,7 @@ const jsplumb = jsPlumb.jsPlumb;
 				showForm: false,
 				VNFDialogVisible: false,
 				NetworkDialogVisible: false,
-				routerDialogVisible: false,
+				SubnetDialogVisible: false,
 				formVNF: {
 					name: '',
 					item_id: ''
@@ -120,84 +130,105 @@ const jsplumb = jsPlumb.jsPlumb;
 					name: '',
 					item_id:  ''
 				},
+				formSubnet: {
+					name: '',
+					item_id:  ''
+				},
 				categoryList: [],
-				// categoryList: [
+				nodeList: [],
+				// nodeList: [
 				// 	{
-				// 		type: 'VNF',
+				// 		node_type: 'VNF',
+				// 		itemList: []
 				// 	},
 				// 	{
-				// 		type: 'Network',
+				// 		node_type: 'Network',
+				// 		itemList: []
 				// 	}
 				// ],
-				// nodeList: [],
-				nodeList: [
-					{
-						node_type: 'VNF',
-						itemList: [],
-							"connections": {
-								"CP": {
-									"multiple": true,
-									"required": false
-								},
-								"Network": {
-									"multiple": true,
-									"required": false
-								},
-								"TapService": {
-									"required": false,
-									"description": "requiredwhenneed_tapaasistrue"
-								}
-							}
-					},
-					{
-						node_type: 'Network',
-						itemList: []
-					}
-				],
-				obj: {},
-				nodePosition: {}
+				tempItemObj: {},
+				nodePosition: {},
+				// submitNodeTemplate:{}
       };
 		},
 		methods: {
 			main() {
 				const me = this;
+				const config = this.getBaseConfig();
+
 				this.jInstance = jsplumb.getInstance({
 					Container:"flowchart-demo"
 				});
-				const instance = this.jInstance;
 				this.jInstance.importDefaults({
 					// ReattachConnections: true,
 					ConnectionsDetachable   : false,
 				});
+					// 判断能否连接
+					this.jInstance.bind('beforeDrop', function(info) {
+						const endpoints = info.connection.endpoints;
+						// console.log(info);
+						const dropEnd = info.dropEndpoint;
+						const sourceNodeType = endpoints[0].element.attributes.getNamedItem('node_type').value;
+						const targetNodeType = dropEnd.element.attributes.getNamedItem('node_type').value;
+
+						// 看目标节点是否允许和源节点连接
+						const sourceId = info.sourceId;
+						const targetId = info.targetId;
+
+						me.nodeList.map(node => {
+							if (node.node_type === sourceNodeType) {
+								// node.connections
+								let connections = [];
+									console.log(node.connections);
+								for (let k in node.connections) {
+									connections.push(k);
+								}
+								if (connections.includes(targetNodeType)) {
+									console.log('可以连接');
+									me.jInstance.connect({
+										source: sourceId,
+										target: targetId
+									}, config);
+									return true;
+								} else {
+									me.$alert('不能连接！');
+									return false;
+								}
+							}
+						});
+					});
 				// 2个节点建立连接的事件
 				this.jInstance.bind("connection", function(info) {
-					// console.log(info);
-					const sourceNodeType = info.source.attributes.getNamedItem('node_type').value;
-					const targetNodeType = info.target.attributes.getNamedItem('node_type').value;
-			
+					console.log(info);
+					// const sourceNodeType = info.source.attributes.getNamedItem('node_type').value;
+					// const targetNodeType = info.target.attributes.getNamedItem('node_type').value;
+
+					// const sourceItemId = info.source.attributes.getNamedItem('item_id').value;
+					// const targetItemId = info.target.attributes.getNamedItem('item_id').value;
+
+					// const souceNodeItem = this.submitNodeTemplate[sourceNodeType] ? this.submitNodeTemplate[sourceNodeType] : [];
+					// const targetNodeItem = this.submitNodeTemplate[targetNodeType] ? this.submitNodeTemplate[targetNodeType] : [];
+
+					// souceNodeItem.map(item => {
+					// 	item.connections = item.connections ? item.connections : {};
+					// });
+					// targetNodeItem.map(item => {
+					// 	item.connections = item.connections ? item.connections : {};
+					// });
+					// const tempSourceObj = {
+					// 	item_id: sourceItemId
+					// };
+					// const sourceConnection = 
 
 					// this.nodeList.map(node => {
 					// 	if (node.node_type === )
 					// })
 				});
-				// 判断能否连接
-				this.jInstance.bind("beforeDrop", function(info) {
-					console.log(info);
-					const endpoints = info.connection.endpoints;
-					const dropEnd = info.dropEndpoint;
-					const sourceNodeType = endpoints[0].element.attributes.getNamedItem('node_type').value;
-					const targetNodeType = dropEnd.element.attributes.getNamedItem('node_type').value;
-					if (sourceNodeType === targetNodeType) {
-						alert('同类型节点不能相连');
-						return false;
-					} else {
-						return true;
-					}
-				});
+
 				this.jInstance.bind('dblclick', function (conn, originalEvent) {
 					// console.log(conn);
 					me.$confirm('确定删除所点击的链接吗？').then(() => {
-						instance.deleteConnection(conn);
+						this.instance.deleteConnection(conn);
 					})
 					.catch(() => {
 
@@ -225,16 +256,46 @@ const jsplumb = jsPlumb.jsPlumb;
 				this.nodeList.map(node => {
 					if (node.node_type === name) {
 						const count = node.itemList.length;
-						this.obj = {
+						this.tempItemObj = {
 							index: count + 1,
 							item_id: this['form'+name].item_id,
 							id: uuidv1(),
 							position: this.nodePosition
 						};
-						node.itemList.push(this.obj);
+						node.itemList.push(this.tempItemObj);
 					}
 				});
 				this[name + 'DialogVisible'] = false;
+
+				const config = this.getBaseConfig();
+				this.$nextTick(() => {
+					this.jInstance.draggable(this.tempItemObj.id, {
+						containment: 'parent'
+					});
+					this.jInstance.addEndpoint(this.tempItemObj.id, {
+						// anchor: 'Bottom',
+						isSource: true,
+						isTarget: true,
+						uuid: this.tempItemObj.id,
+					}, config);
+				});
+
+				// const config = this.getBaseConfig();
+				// this.$nextTick(() => {
+				// 	this.nodeList.map(node => {
+				// 		node.itemList.map(item => {
+				// 				this.jInstance.draggable(item.id, {
+				// 					containment: 'parent'
+				// 				});
+				// 				this.jInstance.addEndpoint(item.id, {
+				// 					// anchor: 'Bottom',
+				// 					isSource: true,
+				// 					isTarget: true,
+				// 					// uuid: item.id
+				// 				}, config);
+				// 		});
+				// 	});
+				// });
 			},
 			_handleDialogClose(name) {
 				this[name + 'DialogVisible'] = false;
@@ -251,13 +312,13 @@ const jsplumb = jsPlumb.jsPlumb;
 					type: key
 				});
 				// 
-				// this.nodeList.push({
-				// 	node_type: key,
-				// 	itemList: [],
-				// 	connections: nodeTypes[key].connections
-				// });
+				this.nodeList.push({
+					node_type: key,
+					itemList: [],
+					connections: nodeTypes[key].connections
+				});
 			}
-			console.log(this.nodeList);
+			// console.log(this.nodeList);
 		},
 		mounted() {
 			const me = this;
@@ -266,28 +327,24 @@ const jsplumb = jsPlumb.jsPlumb;
 			});
 		},
 		watch: {
-			nodeList: {
-				handler: function(newVal, oldVal) {
-					const config = this.getBaseConfig();
-					newVal.map(node => {
-						node.itemList.map(item => {
-							this.$nextTick(() => {
-								this.jInstance.draggable(item.id, {
-									containment: 'parent'
-								});
-								this.jInstance.addEndpoint(this.obj.id, {
-									// anchor: 'Bottom',
-									isSource: true,
-									isTarget: true,
-									uuid: this.obj.id,
-									// anchor:[ "Continuous" ]
-								}, config);
-							});
-						});
-					});
-				},
-				deep: true
-			}
+			// tempItemObj: {
+			// 	handler: function(newVal, oldVal) {
+			// 		console.log(newVal);
+			// 		const config = this.getBaseConfig();
+			// 		this.$nextTick(() => {
+			// 			this.jInstance.draggable(newVal.id, {
+			// 				containment: 'parent'
+			// 			});
+			// 			this.jInstance.addEndpoint(newVal.id, {
+			// 				// anchor: 'Bottom',
+			// 				isSource: true,
+			// 				isTarget: true,
+			// 				uuid: newVal.id,
+			// 			}, config);
+			// 		});
+			// 	},
+			// 	deep: true
+			// }
 		}
 	};
 </script>

@@ -6,7 +6,7 @@
 		"release_data_time" : "2019-11-07 14:30",
 		"description" : "this is a test NSD"
 	},
-	"topology_templates" : {
+	"topology_template" : {
 		"inputs" : [
 			{
 				"name" : "network1_segment_id",
@@ -47,7 +47,7 @@
 				"default" : [ "192.168.0.1", "192.168.0.2" ]
 			}
 		],
-		"node_template" : {
+		"node_templates" : {
 			"VNF" : [
 				{
 					"item_id" : "vnf1",

@@ -35,6 +35,7 @@
 			<div class="drop-region" id="flowchart-demo">
         <template>
           <button id="drag-test" class="draggable">drag</button>
+          <button id="drag-test0" class="draggable">drag0</button>
         </template>
 			</div>
 		</drop>
@@ -86,7 +87,10 @@ const jsplumb = jsPlumb.jsPlumb;
 		methods: {
       _handleDrop() {
 
-      },
+			},
+						getBaseConfig() {
+				return Object.assign({}, jsPlumbConfig.baseStyle);
+			},
 			main() {
 				const me = this;
 				this.jInstance = jsplumb.getInstance({
@@ -94,28 +98,35 @@ const jsplumb = jsPlumb.jsPlumb;
         });
         this.jInstance.draggable('drag-test', {
           containment: 'parent'
+				});
+				this.jInstance.draggable('drag-test0', {
+          containment: 'parent'
         });
 
-				// const instance = this.jInstance;
-				// this.jInstance.importDefaults({
-				// 	// ReattachConnections: true,
-				// 	ConnectionsDetachable   : false,
-				// });
-				// this.jInstance.bind("connection", function(info) {
-				// 	// console.log(info);
-				// });
-				// this.jInstance.bind('dblclick', function (conn, originalEvent) {
-				// 	// console.log(conn);
-				// 	me.$confirm('确定删除所点击的链接吗？').then(() => {
-				// 		instance.deleteConnection(conn);
-				// 	})
-				// 	.catch(() => {
+				const instance = this.jInstance;
+				this.jInstance.importDefaults({
+					// ReattachConnections: true,
+					ConnectionsDetachable: false,
+					// isSource: true,
+        	// isTarget: true
+				});
+					const config = this.getBaseConfig();
 
-				// 	})
-				// });
-			},
-			getBaseConfig() {
-				return Object.assign({}, jsPlumbConfig.baseStyle);
+				this.jInstance.addEndpoint('drag-test', {
+					// anchor: 'Bottom',
+					isSource: true,
+					isTarget: true,
+					// anchor:[ "Continuous" ]
+				}, config);
+				this.jInstance.addEndpoint('drag-test0', {
+					// anchor: 'Bottom',
+					isSource: true,
+					isTarget: true,
+					// anchor:[ "Continuous" ]
+				}, config);
+				this.jInstance.bind("connection", function(info) {
+					console.log(info);
+				});
 			},
 			onSubmit(name) {
 
@@ -132,7 +143,6 @@ const jsplumb = jsPlumb.jsPlumb;
 			const me = this;
 			jsplumb.ready(function() {
         me.main();
-
       });
 
 		}
