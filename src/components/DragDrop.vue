@@ -37,10 +37,11 @@
 					<el-button v-for="item in node.itemList"
 						type="default"
 						class="draggable"
-						:key="item.item_id"
+						:key="item.id"
 						:id="item.id"
 						:style="item.position"
 						:node_type="node.node_type"
+						:connections=""
 					>
 						{{ node.node_type }}_{{ item.index }}
 						<i class="edit el-icon-edit"></i>
@@ -123,45 +124,30 @@ const jsplumb = jsPlumb.jsPlumb;
 				// categoryList: [
 				// 	{
 				// 		type: 'VNF',
-				// 		connections: {
-				// 			"CP": {
-				// 			"multiple": true,
-				// 			"required": false
-				// 			},
-				// 			"Network": {
-				// 				"multiple": true,
-				// 				"required": false
-				// 			},
-				// 			"TapService": {
-				// 				"required": false,
-				// 				"description": "requiredwhenneed_tapaasistrue"
-				// 			}
-				// 		}
 				// 	},
 				// 	{
 				// 		type: 'Network',
-				// 		"connections": {
-				// 			"Network": {
-				// 				"required": true
-				// 			},
-				// 			"ECMP": {
-				// 				"required": false,
-				// 				"description": "requiredwhenexist_loopbackipistrue"
-				// 			},
-				// 			"BGP": {
-				// 				"required": false,
-				// 				"description": "requiredwhenexist_bgpistrue"
-				// 			},
-				// 			"TapFlow": {
-				// 				"required": false
-				// 			}
-				// 		}
 				// 	}
 				// ],
+				// nodeList: [],
 				nodeList: [
 					{
 						node_type: 'VNF',
-						itemList: []
+						itemList: [],
+							"connections": {
+								"CP": {
+									"multiple": true,
+									"required": false
+								},
+								"Network": {
+									"multiple": true,
+									"required": false
+								},
+								"TapService": {
+									"required": false,
+									"description": "requiredwhenneed_tapaasistrue"
+								}
+							}
 					},
 					{
 						node_type: 'Network',
@@ -185,15 +171,28 @@ const jsplumb = jsPlumb.jsPlumb;
 				});
 				// 2个节点建立连接的事件
 				this.jInstance.bind("connection", function(info) {
-					console.log(info);
-					const sourceAttr = info.source.attributes;
-					const targetAttr = info.target.attributes;
-					// console.log(sourceAttr);
-					// console.log(targetAttr);
+					// console.log(info);
+					const sourceNodeType = info.source.attributes.getNamedItem('node_type').value;
+					const targetNodeType = info.target.attributes.getNamedItem('node_type').value;
+			
 
 					// this.nodeList.map(node => {
 					// 	if (node.node_type === )
 					// })
+				});
+				// 判断能否连接
+				this.jInstance.bind("beforeDrop", function(info) {
+					console.log(info);
+					const endpoints = info.connection.endpoints;
+					const dropEnd = info.dropEndpoint;
+					const sourceNodeType = endpoints[0].element.attributes.getNamedItem('node_type').value;
+					const targetNodeType = dropEnd.element.attributes.getNamedItem('node_type').value;
+					if (sourceNodeType === targetNodeType) {
+						alert('同类型节点不能相连');
+						return false;
+					} else {
+						return true;
+					}
 				});
 				this.jInstance.bind('dblclick', function (conn, originalEvent) {
 					// console.log(conn);
@@ -251,7 +250,14 @@ const jsplumb = jsPlumb.jsPlumb;
 				this.categoryList.push({
 					type: key
 				});
+				// 
+				// this.nodeList.push({
+				// 	node_type: key,
+				// 	itemList: [],
+				// 	connections: nodeTypes[key].connections
+				// });
 			}
+			console.log(this.nodeList);
 		},
 		mounted() {
 			const me = this;

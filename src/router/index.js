@@ -7,11 +7,11 @@ const routes =  [{
   path: '/',
   component: () => import ( '@/components/HelloWorld' )
 },
-{
-  path: '/drag',
-  component: () =>
-      import ('@/components/DragDrop'),
-},
+// {
+//   path: '/drag',
+//   component: () =>
+//       import ('@/components/DragDrop'),
+// },
 {
   path: '/drag-test',
   component: () =>
