@@ -41,45 +41,47 @@
 				:label="item.title"
 				:name="item.name"
 			>
-			<el-row>
-				<el-col>
-					<div class="temp-save">
-						<el-button type="success" size="mini" class="pull-right">保存</el-button>
-					</div>
-				</el-col>
-			</el-row>
-			<el-row>
-				<el-col>
-					<div class="deploy-flavor-info">
-						deploy info
-					</div>
-				</el-col>
-			</el-row>
-				<drop class="drop"
-					:class="{ over }"
-					:tag="'div'"
-					@dragover="over = true"
-					@dragleave="over = false"
-					@drop="_handleDrop">
-						<div class="drop-region" id="flowchart-demo">
-							<template v-for="(node, key) in nodeList">
-								<el-button v-for="item in node.itemList"
-									type="default"
-									class="draggable"
-									:key="item.id"
-									:id="item.id"
-									:item_id="item.item_id"
-									:style="item.position"
-									:node_type="key"
-								>
-									{{ item.item_id }}
-									<i class="edit el-icon-edit"></i>
-									<i class="close el-icon-close" aria-hidden="true" @click="_deleteNode(item.item_id)"></i>
-								</el-button>
-							</template>
+				<el-row>
+					<el-col>
+						<div class="temp-save">
+							<el-button type="success" size="mini" class="pull-right">保存</el-button>
 						</div>
-				</drop>
+					</el-col>
+				</el-row>
+				<el-row>
+					<el-col>
+						<div class="deploy-flavor-info">
+							{{ item.deployInfo }}
+						</div>
+					</el-col>
+				</el-row>
 			</el-tab-pane>
+			<drop class="drop"
+				:class="{ over }"
+				:tag="'div'"
+				ref="dropRegion"
+				@dragover="over = true"
+				@dragleave="over = false"
+				@drop="_handleDrop">
+					<div class="drop-region" id="flowchart-demo">
+						<template v-for="(node, key) in nodeList">
+							<el-button v-for="item in node.itemList"
+								type="default"
+								class="draggable"
+								:key="item.id"
+								:id="item.id"
+								:item_id="item.item_id"
+								:style="item.position"
+								:node_type="key"
+							>
+								{{ item.item_id }}
+								<i class="edit el-icon-edit"></i>
+								<i class="close el-icon-close" aria-hidden="true" @click="_deleteNode(item.item_id)"></i>
+							</el-button>
+						</template>
+					</div>
+			</drop>
+
 		</el-tabs>
 	</el-main>
 	<el-dialog title="vnf" :visible="VNFDialogVisible" @close="_handleDialogClose('vnf')">
@@ -185,12 +187,15 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 				nodePosition: {},
 				submitNodeTemplate:{},
 				editableTabsValue: '1',
-        editableTabs: [{
+        editableTabs: [
+					{
           title: 'Deploy 1',
-          name: '1'
+					name: '1',
+					deployInfo: 'deployInfo__0'
         }, {
           title: 'Deploy 2',
-          name: '2'
+					name: '2',
+					deployInfo: 'deployInfo__1'
         }],
         tabIndex: 2
       };
@@ -394,6 +399,7 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 				});
 			},
 			_handleDrop(data, ev) {
+				console.log(ev);
 				let type = data.type;
 				let visible = type + 'DialogVisible';
         this.over = false;
@@ -481,6 +487,13 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 			const me = this;
 			jsplumb.ready(function() {
 				me.main();
+			});
+			console.log(this.$refs.dropRegion);
+			this.$nextTick(() => {
+				const dropRegionTop = this.$refs.dropRegion.getBoundingClientRect().top;
+				const dropRegionLeft = this.$refs.dropRegion.getBoundingClientRect().left;
+				console.log(dropRegionTop);
+				console.log(dropRegionLeft);
 			});
 		}
 	};
