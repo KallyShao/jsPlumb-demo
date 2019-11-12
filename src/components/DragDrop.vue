@@ -15,59 +15,47 @@
 								{{ item.type }}
 							</el-button>
 						</drag>
-						<!-- <drag class="drag" :tag="'div'" :transfer-data="{ type: 'vnf' }">
-							<el-button type="primary" class="btn-controller">
-								<i class="fa fa-play-circle-o" aria-hidden="true"></i>
-								VNF
-							</el-button>
-						</drag> -->
 					</el-col>
 				</el-row>
 			</div>
 	</el-aside>
 	<el-main>
-		<drop class="drop"
-			:class="{ over }"
-			:tag="'div'"
-			@dragover="over = true"
-			@dragleave="over = false"
-			@drop="_handleDrop">
-			<div class="drop-region" id="flowchart-demo">
-				<template v-for="node in nodeList">
-					<el-button v-for="item in node.itemList"
-						type="default"
-						class="draggable"
-						:key="item.id"
-						:id="item.id"
-						:item_id="item.item_id"
-						:style="item.position"
-						:node_type="node.node_type"
-					>
-						{{ node.node_type }}_{{ item.index }}
-						<i class="edit el-icon-edit"></i>
-						<i class="close el-icon-close" aria-hidden="true" @click="_deleteNode(item.item_id)"></i>
-					</el-button>
-				</template>
-				<!-- <el-card class="box-card draggable" v-for="(node, idx) in nodeList" :style="node.position"
-					:id="node.id"
-					:key="idx">
-					<div slot="header" class="clearfix">
-						<span>{{ node.type }}</span>
-						<el-button style="float: right; padding: 3px 0" type="text">
-							<i class="el-icon-close"></i>
-						</el-button>
-					</div>
-					<div v-for="(item, idx) in node.itemList" :key="idx" class="text item">
-						<span>{{ node.type }}_{{ idx }}</span>
-						<div class="icon-wrap">
-							<i class="el-icon-edit"></i>
-							<i class="el-icon-remove"></i>
-							<i class="el-icon-circle-plus"></i>
+		<el-tabs v-model="editableTabsValue" type="card" editable @edit="handleTabsEdit">
+			<el-tab-pane
+				:key="item.name"
+				v-for="(item, index) in editableTabs"
+				:label="item.title"
+				:name="item.name"
+			>
+				<div class="temp-save">
+					<el-button type="success" size="mini" class="pull-right">保存</el-button>
+				</div>
+				<drop class="drop"
+					:class="{ over }"
+					:tag="'div'"
+					@dragover="over = true"
+					@dragleave="over = false"
+					@drop="_handleDrop">
+						<div class="drop-region" id="flowchart-demo">
+							<template v-for="node in nodeList">
+								<el-button v-for="item in node.itemList"
+									type="default"
+									class="draggable"
+									:key="item.id"
+									:id="item.id"
+									:item_id="item.item_id"
+									:style="item.position"
+									:node_type="node.node_type"
+								>
+									{{ item.item_id }}
+									<i class="edit el-icon-edit"></i>
+									<i class="close el-icon-close" aria-hidden="true" @click="_deleteNode(item.item_id)"></i>
+								</el-button>
+							</template>
 						</div>
-					</div>
-				</el-card> -->
-			</div>
-		</drop>
+				</drop>
+			</el-tab-pane>
+		</el-tabs>
 	</el-main>
 	<el-dialog title="vnf" :visible="VNFDialogVisible" @close="_handleDialogClose('vnf')">
 		<el-form ref="form" :model="formVNF" label-width="80px">
@@ -76,6 +64,9 @@
 			</el-form-item>
 			<el-form-item label="VNF item id">
 				<el-input v-model="formVNF.item_id"></el-input>
+			</el-form-item>
+			<el-form-item v-for="item in formVNF.cpInfoList" :label="item.name" :key="item.item_id">
+				<el-input v-model="item.item_id"></el-input>
 			</el-form-item>
 		</el-form>
 		<div slot="footer" class="dialog-footer">
@@ -117,6 +108,7 @@ import jsPlumbConfig from '@/utils/jsPlumbConfig.js';
 import { nodeTemplate } from '@/utils/jsPlumbData.js';
 const uuidv1 = require('uuid/v1');
 const jsplumb = jsPlumb.jsPlumb;
+const config = Object.assign({}, jsPlumbConfig.baseStyle);
 
 	export default {
 		data () {
@@ -128,7 +120,17 @@ const jsplumb = jsPlumb.jsPlumb;
 				SubnetDialogVisible: false,
 				formVNF: {
 					name: '',
-					item_id: ''
+					item_id: '',
+					cpInfoList: [
+						{
+							name: 'cp0',
+							item_id: 'cp_itemid_0'
+						},
+						{
+							name: 'cp1',
+							item_id: 'cp_itemid_1'
+						}
+					]
 				},
 				formNetwork: {
 					name: '',
@@ -152,13 +154,62 @@ const jsplumb = jsPlumb.jsPlumb;
 				// ],
 				tempItemObj: {},
 				nodePosition: {},
-				submitNodeTemplate:{}
+				submitNodeTemplate:{},
+				editableTabsValue: '1',
+        editableTabs: [{
+          title: 'Tab 1',
+          name: '1',
+          content: 'Tab 1 content'
+        }, {
+          title: 'Tab 2',
+          name: '2',
+          content: 'Tab 2 content'
+        }],
+        tabIndex: 2
       };
 		},
 		methods: {
+			// 节点拖拽，添加断点
+			itemInitial(id) {
+				this.jInstance.draggable(id, {
+					containment: 'parent'
+				});
+				this.jInstance.addEndpoint(id, {
+					// anchor: 'Bottom',
+					isSource: true,
+					isTarget: true
+				}, config);
+			},
+      handleTabsEdit(targetName, action) {
+        if (action === 'add') {
+          let newTabName = ++this.tabIndex + '';
+          this.editableTabs.push({
+            title: 'New Tab',
+            name: newTabName,
+            content: 'New Tab content'
+          });
+          this.editableTabsValue = newTabName;
+        }
+        if (action === 'remove') {
+          let tabs = this.editableTabs;
+          let activeName = this.editableTabsValue;
+          if (activeName === targetName) {
+            tabs.forEach((tab, index) => {
+              if (tab.name === targetName) {
+                let nextTab = tabs[index + 1] || tabs[index - 1];
+                if (nextTab) {
+                  activeName = nextTab.name;
+                }
+              }
+            });
+          }
+          
+          this.editableTabsValue = activeName;
+          this.editableTabs = tabs.filter(tab => tab.name !== targetName);
+				}
+			},
 			main() {
 				const me = this;
-				const config = this.getBaseConfig();
 
 				this.jInstance = jsplumb.getInstance({
 					Container:"flowchart-demo"
@@ -170,36 +221,25 @@ const jsplumb = jsPlumb.jsPlumb;
 					// 判断能否连接
 					this.jInstance.bind('beforeDrop', function(info) {
 						const endpoints = info.connection.endpoints;
-						// console.log(info);
 						const dropEnd = info.dropEndpoint;
 						const sourceNodeType = endpoints[0].element.attributes.getNamedItem('node_type').value;
 						const targetNodeType = dropEnd.element.attributes.getNamedItem('node_type').value;
 
-						// 看目标节点是否允许和源节点连接
-						const sourceId = info.sourceId;
-						const targetId = info.targetId;
-
+						// 判断目标节点是否允许和源节点连接
+						let connections = [];
 						me.nodeList.map(node => {
 							if (node.node_type === sourceNodeType) {
-								// node.connections
-								let connections = [];
-									// console.log(node.connections);
 								for (let k in node.connections) {
 									connections.push(k);
 								}
-								if (connections.includes(targetNodeType)) {
-									console.log('可以连接');
-									me.jInstance.connect({
-										source: sourceId,
-										target: targetId
-									}, config);
-									return true;
-								} else {
-									me.$alert('不能连接！');
-									return false;
-								}
 							}
 						});
+						if (connections.includes(targetNodeType)) {
+							return true;
+						} else {
+							me.$alert('不能连接！');
+							return false;
+						}
 					});
 				// 2个节点建立连接的事件
 				this.jInstance.bind("connection", function(info) {
@@ -213,12 +253,13 @@ const jsplumb = jsPlumb.jsPlumb;
 					const sourceNodeItem = me.submitNodeTemplate[sourceNodeType] ? me.submitNodeTemplate[sourceNodeType] : [];
 					const targetNodeItem = me.submitNodeTemplate[targetNodeType] ? me.submitNodeTemplate[targetNodeType] : [];
 
+					// 将source item id添加至source节点，target id添加至source节点的connection
 					const sourceItemIds = [];
 					sourceNodeItem.map(item => {
 						sourceItemIds.push(item.item_id);
 					});
 
-					if (sourceItemIds.find(sourceItemId)) {
+					if (sourceItemIds.find(id => id === sourceItemId)) {
 						sourceNodeItem.map(item => {
 							if (item.item_id === sourceItemId) {
 								item.connections[targetNodeType] = item.connections[targetNodeType] ? item.connections[targetNodeType] : [];
@@ -226,38 +267,111 @@ const jsplumb = jsPlumb.jsPlumb;
 							}
 						});
 					} else {
-							sourceNodeItem.push({
-								item_id: sourceItemId,
-								connections: {
-									targetNodeType: [ targetItemId ]
-								}
-							});
+						sourceNodeItem.push({
+							item_id: sourceItemId,
+							connections: {
+								[ targetNodeType ]: [ targetItemId ]
+							}
+						});
 					}
 
-					console.log(sourceNodeItem);
+					// 添加相应的target节点信息
+					const targetItemIds = [];
+					targetNodeItem.map(item => {
+						targetItemIds.push(item.item_id);
+					});
 
-					// targetNodeItem.map(item => {
-					// 	item.connections = item.connections ? item.connections : {};
-					// 	item.connections[sourceNodeType] = item.connections[sourceNodeType] ? item.connections[sourceNodeType] : [];
-					// 	item.connections[sourceNodeType].push(sourceItemId);
-					// });
-
-
+					if (targetItemIds.find(id => id === targetItemId)) {
+						targetNodeItem.map(item => {
+							if (item.item_id === targetItemId) {
+								item.connections[sourceNodeType] = item.connections[sourceNodeType] ? item.connections[sourceNodeType] : [];
+								item.connections[sourceNodeType].push(sourceItemId);
+							}
+						});
+					} else {
+						targetNodeItem.push({
+							item_id: targetItemId,
+							connections: {
+								[ sourceNodeType ]: [ sourceItemId ]
+							}
+						});
+					}
+					me.submitNodeTemplate[sourceNodeType] = sourceNodeItem;
+					me.submitNodeTemplate[targetNodeType] = targetNodeItem;
+					// console.log('建立连接=====');
+					// console.log(me.submitNodeTemplate);
 				});
 
 				this.jInstance.bind('dblclick', function (conn, originalEvent) {
-					console.log(conn);
+					// console.log(conn);
+					// console.log(conn.getAttachedElements());
+					const sourceId = conn.sourceId;
+					const targetId = conn.targetId;
+					const endpoints = conn.getAttachedElements();
+					let sourceInfo = {};
+					let targetInfo = {};
+					endpoints.map(item => {
+						const id = item.element.attributes.getNamedItem('id').value;
+						const nodeType = item.element.attributes.getNamedItem('node_type').value;
+						const itemId = item.element.attributes.getNamedItem('item_id').value;
+						if (id === sourceId) {
+							sourceInfo = {
+								id: id,
+								node_type: nodeType,
+								item_id: itemId
+							};
+						} else if (id === targetId) {
+							targetInfo = {
+								id: id,
+								node_type: nodeType,
+								item_id: itemId
+							};
+						}
+					});
+
 					me.$confirm('确定删除所点击的链接吗？').then(() => {
-						this.jInstance.deleteConnection(conn);
+						me.jInstance.deleteConnection(conn);
+						// 删除submitNodeTemplate中的连线关系
+						const sourceNodeItem = me.submitNodeTemplate[sourceInfo.node_type];
+						const targetNodeItem = me.submitNodeTemplate[targetInfo.node_type];
+						// 删除source节点connections中的target id
+						sourceNodeItem.map(item => {
+							if (item.item_id === sourceInfo.item_id) {
+								for (let k in item.connections) {
+									if (k === targetInfo.node_type) {
+										const idx = item.connections[k].findIndex(val => {
+											return val === targetInfo.item_id;
+										});
+										item.connections[k].splice(idx, 1);
+									}
+								}
+							}
+						});
+						// 删除target节点connections中的source id
+						targetNodeItem.map(item => {
+							if (item.item_id === targetInfo.item_id) {
+								for (let k in item.connections) {
+									if (k === sourceInfo.node_type) {
+										const idx = item.connections[k].findIndex(val => {
+											return val === sourceInfo.item_id;
+										});
+										item.connections[k].splice(idx, 1);
+									}
+								}
+							}
+						});
+						me.submitNodeTemplate[sourceInfo.node_type] = sourceNodeItem;
+						me.submitNodeTemplate[targetInfo.node_type] = targetNodeItem;
+						// console.log(me.submitNodeTemplate);
 					})
 					.catch(() => {
 
 					})
 				});
 			},
-			getBaseConfig() {
-				return Object.assign({}, jsPlumbConfig.baseStyle);
-			},
+			// getBaseConfig() {
+			// 	return Object.assign({}, jsPlumbConfig.baseStyle);
+			// },
 			_handleDrop(data, ev) {
 				let type = data.type;
 				let visible = type + 'DialogVisible';
@@ -285,19 +399,39 @@ const jsplumb = jsPlumb.jsPlumb;
 						node.itemList.push(this.tempItemObj);
 					}
 				});
+				// 添加cp节点
+				if (name === 'VNF') {
+					const cpList = this.formVNF.cpInfoList;
+					this.nodeList.map(node => {
+						if (node.node_type === 'CP') {
+							cpList.map(cp => {
+								node.itemList.push({
+									id: uuidv1(),
+									item_id: cp.item_id,
+									position: {
+
+									}
+								});
+							});
+						}
+					});
+				}
+
 				this[name + 'DialogVisible'] = false;
 
-				const config = this.getBaseConfig();
 				this.$nextTick(() => {
-					this.jInstance.draggable(this.tempItemObj.id, {
-						containment: 'parent'
-					});
-					this.jInstance.addEndpoint(this.tempItemObj.id, {
-						// anchor: 'Bottom',
-						isSource: true,
-						isTarget: true,
-						uuid: this.tempItemObj.id,
-					}, config);
+					this.itemInitial(this.tempItemObj.id);
+
+					// cp与vnf连线
+					if (name === 'VNF') {
+						this.nodeList.map(node => {
+							if (node.node_type === 'CP') {
+								node.itemList.map(cp => {
+									this.itemInitial(cp.id);
+								});
+							}
+						});
+					}
 				});
 			},
 			_handleDialogClose(name) {
@@ -311,10 +445,12 @@ const jsplumb = jsPlumb.jsPlumb;
 		created() {
 			const nodeTypes = nodeTemplate.nodetypes;
 			for (let key in nodeTypes) {
-				this.categoryList.push({
-					type: key
-				});
-				// 
+				if (key !== 'CP') {
+					this.categoryList.push({
+						type: key
+					});
+				}
+				// 初始化节点数据
 				this.nodeList.push({
 					node_type: key,
 					itemList: [],
@@ -333,9 +469,6 @@ const jsplumb = jsPlumb.jsPlumb;
 </script>
 
 <style rel="stylesheet/scss" lang="scss" scoped>
-.el-container {
-	min-height: 1000px;
-}
 .el-aside {
     background-color: #D3DCE6;
     color: #333;
@@ -355,11 +488,10 @@ const jsplumb = jsPlumb.jsPlumb;
 		position: absolute;
 		top: 2px;
 		right: 2px;
-		/* font-size: 16px; */
 	}
   .drop-region {
     width: 100%;
-		height: 100%;
+		min-height: 1000px;
 		position: relative;
 	}
 	.draggable {

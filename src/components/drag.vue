@@ -127,6 +127,17 @@ const jsplumb = jsPlumb.jsPlumb;
 				this.jInstance.bind("connection", function(info) {
 					console.log(info);
 				});
+				this.jInstance.bind('dblclick', function (conn, originalEvent) {
+					me.$confirm('确定删除所点击的链接吗？').then(() => {
+						console.log('deletexdxd')
+						// me.jInstance.detach(conn);
+						me.jInstance.deleteConnection(conn);
+						console.log(conn);
+					})
+					.catch(() => {
+
+					})
+				});
 			},
 			onSubmit(name) {
 

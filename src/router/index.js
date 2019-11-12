@@ -12,10 +12,10 @@ const routes =  [{
   component: () =>
       import ('@/components/DragDrop'),
 },
-// {
-//   path: '/drag-test',
-//   component: () =>
-//       import ('@/components/drag'),
-// }
+{
+  path: '/drag-test',
+  component: () =>
+      import ('@/components/drag'),
+}
 ];
 export default new Router({ routes });
