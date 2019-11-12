@@ -2,24 +2,38 @@
 <el-container>
 	<el-aside width="200px">
 		<div>
-				<h5>节点类型列表</h5>
-				<el-row>
-					<el-col>
-						<drag v-for="item in categoryList"
-							class="drag" :tag="'div'"
-							:transfer-data="item"
-							:key="item.type"
-							@drag="_handleDrag(item.type, ...arguments)"
-						>
-							<el-button type="primary" class="btn-controller">
-								{{ item.type }}
-							</el-button>
-						</drag>
-					</el-col>
-				</el-row>
-			</div>
+			<h5>节点类型列表</h5>
+			<el-row>
+				<el-col>
+					<drag v-for="item in categoryList"
+						class="drag" :tag="'div'"
+						:transfer-data="item"
+						:key="item.type"
+						@drag="_handleDrag(item.type, ...arguments)"
+					>
+						<el-button type="primary" class="btn-controller">
+							{{ item.type }}
+						</el-button>
+					</drag>
+				</el-col>
+			</el-row>
+		</div>
 	</el-aside>
 	<el-main>
+		<el-row class="nsd-info">
+			<el-col>
+				<div>nsd info</div>
+			</el-col>
+		</el-row>
+		<el-row class="operation-btn">
+			<el-col>
+				<div class="pull-right">
+					<el-button type="primary" size="mini">校验</el-button>
+					<el-button type="primary" size="mini">导出</el-button>
+					<el-button type="primary" size="mini">提交</el-button>
+				</div>
+			</el-col>
+		</el-row>
 		<el-tabs v-model="editableTabsValue" type="card" editable @edit="handleTabsEdit">
 			<el-tab-pane
 				:key="item.name"
@@ -27,9 +41,20 @@
 				:label="item.title"
 				:name="item.name"
 			>
-				<div class="temp-save">
-					<el-button type="success" size="mini" class="pull-right">保存</el-button>
-				</div>
+			<el-row>
+				<el-col>
+					<div class="temp-save">
+						<el-button type="success" size="mini" class="pull-right">保存</el-button>
+					</div>
+				</el-col>
+			</el-row>
+			<el-row>
+				<el-col>
+					<div class="deploy-flavor-info">
+						deploy info
+					</div>
+				</el-col>
+			</el-row>
 				<drop class="drop"
 					:class="{ over }"
 					:tag="'div'"
@@ -37,7 +62,7 @@
 					@dragleave="over = false"
 					@drop="_handleDrop">
 						<div class="drop-region" id="flowchart-demo">
-							<template v-for="node in nodeList">
+							<template v-for="(node, key) in nodeList">
 								<el-button v-for="item in node.itemList"
 									type="default"
 									class="draggable"
@@ -45,7 +70,7 @@
 									:id="item.id"
 									:item_id="item.item_id"
 									:style="item.position"
-									:node_type="node.node_type"
+									:node_type="key"
 								>
 									{{ item.item_id }}
 									<i class="edit el-icon-edit"></i>
@@ -141,29 +166,31 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 					item_id:  ''
 				},
 				categoryList: [],
-				nodeList: [],
-				// nodeList: [
-				// 	{
-				// 		node_type: 'VNF',
+				nodeList: {},
+				// nodeList: {
+				// 	VNF: {
+				// 		type: 'VNF',
+				// 		properties: [],
+				// 		connections: {},
 				// 		itemList: []
 				// 	},
-				// 	{
-				// 		node_type: 'Network',
+				// 	CP: {
+				// 		type: 'CP',
+				// 		properties: [],
+				// 		connections: {},
 				// 		itemList: []
 				// 	}
-				// ],
+				// },
 				tempItemObj: {},
 				nodePosition: {},
 				submitNodeTemplate:{},
 				editableTabsValue: '1',
         editableTabs: [{
-          title: 'Tab 1',
-          name: '1',
-          content: 'Tab 1 content'
+          title: 'Deploy 1',
+          name: '1'
         }, {
-          title: 'Tab 2',
-          name: '2',
-          content: 'Tab 2 content'
+          title: 'Deploy 2',
+          name: '2'
         }],
         tabIndex: 2
       };
@@ -227,13 +254,10 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 
 						// 判断目标节点是否允许和源节点连接
 						let connections = [];
-						me.nodeList.map(node => {
-							if (node.node_type === sourceNodeType) {
-								for (let k in node.connections) {
-									connections.push(k);
-								}
-							}
-						});
+						const sourceNode = me.nodeList[sourceNodeType];
+						for (let k in sourceNode.connections) {
+							connections.push(k);
+						}
 						if (connections.includes(targetNodeType)) {
 							return true;
 						} else {
@@ -369,9 +393,6 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 					})
 				});
 			},
-			// getBaseConfig() {
-			// 	return Object.assign({}, jsPlumbConfig.baseStyle);
-			// },
 			_handleDrop(data, ev) {
 				let type = data.type;
 				let visible = type + 'DialogVisible';
@@ -387,33 +408,24 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 				// console.log(transferData);
 			},
 			onSubmit(name) {
-				this.nodeList.map(node => {
-					if (node.node_type === name) {
-						const count = node.itemList.length;
-						this.tempItemObj = {
-							index: count + 1,
-							item_id: this['form'+name].item_id,
-							id: uuidv1(),
-							position: this.nodePosition
-						};
-						node.itemList.push(this.tempItemObj);
-					}
-				});
+				this.tempItemObj = {
+					item_id: this['form'+name].item_id,
+					id: uuidv1(),
+					position: this.nodePosition
+				};
+				this.nodeList[name].itemList.push(this.tempItemObj);
+
 				// 添加cp节点
 				if (name === 'VNF') {
 					const cpList = this.formVNF.cpInfoList;
-					this.nodeList.map(node => {
-						if (node.node_type === 'CP') {
-							cpList.map(cp => {
-								node.itemList.push({
-									id: uuidv1(),
-									item_id: cp.item_id,
-									position: {
+					cpList.map(cp => {
+						this.nodeList['CP'].itemList.push({
+								id: uuidv1(),
+								item_id: cp.item_id,
+								position: {
 
-									}
-								});
-							});
-						}
+								}
+						});
 					});
 				}
 
@@ -421,15 +433,17 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 
 				this.$nextTick(() => {
 					this.itemInitial(this.tempItemObj.id);
-
 					// cp与vnf连线
 					if (name === 'VNF') {
-						this.nodeList.map(node => {
-							if (node.node_type === 'CP') {
-								node.itemList.map(cp => {
-									this.itemInitial(cp.id);
-								});
-							}
+						this.nodeList['CP'].itemList.map(cp => {
+							this.itemInitial(cp.id);
+
+							// this.submitNodeTemplate['CP'].push({
+							// 	item_id: cp.item_id,
+							// 	connections: {
+							// 		VNF: 
+							// 	}
+							// });
 						});
 					}
 				});
@@ -451,11 +465,15 @@ const config = Object.assign({}, jsPlumbConfig.baseStyle);
 					});
 				}
 				// 初始化节点数据
-				this.nodeList.push({
-					node_type: key,
-					itemList: [],
-					connections: nodeTypes[key].connections
-				});
+				for (let k in nodeTypes) {
+					nodeTypes[k].itemList = [];
+				}
+				this.nodeList = nodeTypes;
+				// this.nodeList.push({
+				// 	node_type: key,
+				// 	itemList: [],
+				// 	connections: nodeTypes[key].connections
+				// });
 			}
 			// console.log(this.nodeList);
 		},
